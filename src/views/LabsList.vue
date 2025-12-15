@@ -73,7 +73,7 @@ export default {
             </div>            
         </div>
 
-        <button @click="goToResultsPage">asd</button>
+        <button @click="goToResultsPage">На последнюю страницу</button>
     </div>
 </template>
 

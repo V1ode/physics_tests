@@ -36,12 +36,13 @@ export default {
             angularAccelerationAbsError: 0,
             inertiaMomentAbsError: 0,
             wrongInputData: [false, false, false, false],
+            dataCalced: false
 		};
 	},
 
 	mounted() {
-        this.calcTotalResults()
-        this.saveData()
+        // this.calcTotalResults()
+        // this.saveData()
 	},
 
 	methods: {
@@ -55,20 +56,62 @@ export default {
             if(this.inputData[valueName] < 0.01)
                 this.inputData[valueName] = 0.01
         },
-        checkForceMomentInput() {
-
-        },
         finish() {
-            this.calcStr()
-            this.checkStudentResults()
-            console.log(this.new_lab_data)
-            if(!this.wrongInputData.includes(true))
+            if(!this.dataCalced)
                 this.calcTotalResults()
-                this.saveData()
-                console.log(1)
-                // this.goToResultsPage()
+
+            if(!this.checkEmptyInputs()) {
+                this.calcStr()              
+                this.checkStudentResults()
+                
+                console.log(this.wrongInputData, this.avgTime, this.avgTimeAbsError)
+                if(!this.wrongInputData.includes(true)) {
+                    this.saveData()
+                    // console.log("Данные:", this.new_lab_data)
+                    // console.log(1)
+                    this.goToResultsPage()
+                }                 
+            }            
+        },
+        checkEmptyInputs() {
+            let correctInput = true
+            let count = 1
+            let inputBlocks = document.querySelectorAll(`.input-block`)
+
+            for(let key in this.inputData) {                
+                if(isNaN(this.inputData[key.toString()])) {
+                    inputBlocks[count].classList.add('wrong-data')
+                    correctInput = false
+                }
+                
+                count++
+            }
+
+            if(!correctInput) {
+                document.querySelectorAll(`.error-text`)[0]
+                    .classList.remove('hidden')
+            }
+
+            return !correctInput
+        },
+        removeError() {
+            let errorInputBlocks = document.querySelectorAll(`.wrong-data`)
+            
+            this.wrongInputData.fill(false)
+            
+            for(let i = 0; i < errorInputBlocks.length; i++) {      
+                // console.log(errorInputBlocks.length)          
+                errorInputBlocks[i].classList.remove('wrong-data')
+            }
+
+            let errorTextBlocks = document.querySelectorAll(`.error-text`)
+            for(let i = 0; i < errorTextBlocks.length; i++) {
+                errorTextBlocks[i].classList.add('hidden')
+            }       
         },
         calcStr() {
+            this.avgTime = 0
+
             for(let i = 0; i < this.new_lab_data["data"]["timeMeasurings"][this.strNumber-1].length; i++) {
                 this.avgTime += this.new_lab_data["data"]["timeMeasurings"][this.strNumber-1][i]                
             }          
@@ -82,6 +125,7 @@ export default {
             this.inertiaMoment = this.forceMoment / this.angularAcceleration
 
 
+            this.avgTimeAbsError = 0
             for(let i = 0; i < this.new_lab_data["data"]["timeMeasurings"][this.strNumber-1].length; i++) {
                 this.avgTimeAbsError += 
                     Math.pow(Math.abs(this.avgTime - this.new_lab_data["data"]["timeMeasurings"][this.strNumber-1][i]), 2)                        
@@ -104,37 +148,29 @@ export default {
                 * this.inertiaMoment
         },
         checkStudentResults() {
-            if(Math.abs(this.avgTime - this.inputData["avgTime"]) > this.avgTimeAbsError) {
-                for(let i = 0; i < this.wrongInputData.length; i++) {
-                    this.wrongInputData[i] = true
-                }
-            } else {
-                this.wrongInputData[0] = false
+            if(Math.abs(this.avgTime - this.inputData["avgTime"]) > this.avgTimeAbsError) {               
+                this.wrongInputData[0] = true
+                document.querySelectorAll(`.input-block`)[1].classList.add('wrong-data')                
+            }
+            
+            if(Math.abs(this.forceMoment - this.inputData["forceMoment"]) > this.forceMomentAbsError){ 
+                this.wrongInputData[1] = true             
+                document.querySelectorAll(`.input-block`)[2].classList.add('wrong-data')       
+            }
+            
+            if(Math.abs(this.angularAcceleration - this.inputData["angularAcceleration"]) > this.angularAccelerationAbsError){          
+                this.wrongInputData[2] = true
+                document.querySelectorAll(`.input-block`)[3].classList.add('wrong-data') 
+            } 
+            
+            if(Math.abs(this.inertiaMoment - this.inputData["inertiaMoment"]) > this.inertiaMomentAbsError){              
+                this.wrongInputData[3] = true
+                document.querySelectorAll(`.input-block`)[4].classList.add('wrong-data')                 
             }
 
-            if(Math.abs(this.forceMoment - this.inputData["forceMoment"]) > this.forceMomentAbsError){
-                for(let i = 1; i < this.wrongInputData.length; i++) {
-                    this.wrongInputData[i] = true
-                }
-            } else {
-                this.wrongInputData[1] = false
-            }
-
-            if(Math.abs(this.angularAcceleration - this.inputData["angularAcceleration"]) > this.angularAccelerationAbsError){
-                for(let i = 2; i < this.wrongInputData.length; i++) {
-                    this.wrongInputData[i] = true
-                }
-            } else {
-                this.wrongInputData[2] = false
-            }
-
-            if(Math.abs(this.inertiaMoment - this.inputData["inertiaMoment"]) > this.inertiaMomentAbsError){
-                for(let i = 3; i < this.wrongInputData.length; i++) {
-                    this.wrongInputData[i] = true
-                }
-            } else {
-                this.wrongInputData[3] = false
-            }
+            if(this.wrongInputData.includes(true))
+                document.querySelectorAll(`.error-text`)[1]
+                    .classList.remove('hidden')
         },
         calcAngularAcceleration(time) {
             return 2 * this.LOAD_LOWERING_HEIGHT / (this.PULLEY_RADIUS * Math.pow(time, 2))
@@ -165,6 +201,7 @@ export default {
             this.new_lab_data['data']['angularAccelerationRelativeErrors'] = []
             this.new_lab_data['data']['inertiaMomentRelativeErrors'] = []
 
+
             for(let strNum = 0; strNum < this.new_lab_data['data']['weights'].length; strNum++) {
                 // Вычисление основных величин 
                 for(let i = 0; i < this.new_lab_data["data"]["timeMeasurings"][strNum].length; i++) {
@@ -178,6 +215,7 @@ export default {
                 this.new_lab_data['data']['angularAccelerations'][strNum] = this.calcAngularAcceleration(this.new_lab_data['data']['avgTimes'][strNum]) 
                 this.new_lab_data['data']['inertiaMoments'][strNum] 
                     = this.new_lab_data['data']['forceMoments'][strNum] / this.new_lab_data['data']['angularAccelerations'][strNum]
+
 
                 // Вычисление абсолютных погрешностей
                 for(let i = 0; i < this.new_lab_data["data"]["timeMeasurings"][strNum].length; i++) {
@@ -202,6 +240,7 @@ export default {
                     this.new_lab_data['data']['inertiaMoments'][strNum]
                 ) 
 
+
                 // Вычисление относительных погрешностей
                 this.new_lab_data['data']['avgTimeRelativeErrors'][strNum] = 
                     this.new_lab_data['data']['avgTimeAbsErrors'][strNum] / this.new_lab_data['data']['avgTimes'][strNum]   
@@ -213,8 +252,71 @@ export default {
                     this.new_lab_data['data']['angularAccelerationAbsErrors'][strNum] / this.new_lab_data['data']['angularAccelerations'][strNum]
 
                 this.new_lab_data['data']['inertiaMomentRelativeErrors'][strNum] =
-                    this.new_lab_data['data']['inertiaMomentAbsErrors'][strNum] / this.new_lab_data['data']['inertiaMoments'][strNum]
+                    this.new_lab_data['data']['inertiaMomentAbsErrors'][strNum] / this.new_lab_data['data']['inertiaMoments'][strNum]               
             }
+
+
+            // Приводим все значения к нужному количеству цифер после запятой
+            this.new_lab_data['data']['weights'].forEach((num, index) => {
+                this.new_lab_data['data']['weights'][index] = num.toFixed(3)
+            })
+
+            this.new_lab_data['data']['timeMeasurings'].forEach((arr, index) => {
+                arr.forEach((num, j) => {
+                    this.new_lab_data['data']['timeMeasurings'][index][j] = num.toFixed(2)
+                })                
+            })
+
+
+            this.new_lab_data['data']['avgTimes'].forEach((num, index) => {                    
+                this.new_lab_data['data']['avgTimes'][index] = num.toFixed(2)
+            })
+
+            this.new_lab_data['data']['forceMoments'].forEach((num, index) => {
+                this.new_lab_data['data']['forceMoments'][index] = num.toFixed(4)
+            })
+
+            this.new_lab_data['data']['angularAccelerations'].forEach((num, index) => {
+                this.new_lab_data['data']['angularAccelerations'][index] = num.toFixed(3)
+            })
+
+            this.new_lab_data['data']['inertiaMoments'].forEach((num, index) => {
+                this.new_lab_data['data']['inertiaMoments'][index] = num.toFixed(4)
+            })
+
+
+            this.new_lab_data['data']['avgTimeAbsErrors'].forEach((num, index) => {
+                this.new_lab_data['data']['avgTimeAbsErrors'][index] = num.toFixed(2)
+            })
+
+            this.new_lab_data['data']['forceMomentAbsErrors'].forEach((num, index) => {
+                this.new_lab_data['data']['forceMomentAbsErrors'][index] = num.toFixed(4)
+            })
+
+            this.new_lab_data['data']['angularAccelerationAbsErrors'].forEach((num, index) => {
+                this.new_lab_data['data']['angularAccelerationAbsErrors'][index] = num.toFixed(3)
+            })
+
+            this.new_lab_data['data']['inertiaMomentAbsErrors'].forEach((num, index) => {
+                this.new_lab_data['data']['inertiaMomentAbsErrors'][index] = num.toFixed(4)
+            })
+
+
+            this.new_lab_data['data']['avgTimeRelativeErrors'].forEach((num, index) => {
+                this.new_lab_data['data']['avgTimeRelativeErrors'][index] = num.toFixed(2)
+            })
+
+            this.new_lab_data['data']['forceMomentRelativeErrors'].forEach((num, index) => {
+                this.new_lab_data['data']['forceMomentRelativeErrors'][index] = num.toFixed(2)
+            })
+
+            this.new_lab_data['data']['angularAccelerationRelativeErrors'].forEach((num, index) => {
+                this.new_lab_data['data']['angularAccelerationRelativeErrors'][index] = num.toFixed(2)
+            })
+
+            this.new_lab_data['data']['inertiaMomentRelativeErrors'].forEach((num, index) => {
+                this.new_lab_data['data']['inertiaMomentRelativeErrors'][index] = num.toFixed(2)
+            }) 
         },
         saveData() {
             // Сохранение констант
@@ -303,7 +405,7 @@ export default {
 
             avgAngularAccel /= angularAccelerations.length
             avgForceMoment /= angularAccelerations.length
-            console.log('\nNewData')
+            // console.log('\nNewData')
             for(let i = 0; i < angularAccelerations.length; i++) {
                 sum += (this.new_lab_data['data']['forceMoments'][i] - avgForceMoment)
                     *(angularAccelerations[i] - avgAngularAccel)
@@ -316,10 +418,10 @@ export default {
                 / Math.sqrt(sqrForceMomentsSum*sqrAngularAccelsSum) 
             
             
-            console.log(sum, sqrForceMomentsSum, sqrAngularAccelsSum)
+            // console.log(sum, sqrForceMomentsSum, sqrAngularAccelsSum)
 
-            console.log(this.new_lab_data['data']['leastSqrInertiaMoment'],
-                this.new_lab_data['data']['leastSqrInertiaMomentRelativeError'], this.new_lab_data['data']['pairedCorrelationCoef'])
+            // console.log(this.new_lab_data['data']['leastSqrInertiaMoment'],
+            //     this.new_lab_data['data']['leastSqrInertiaMomentRelativeError'], this.new_lab_data['data']['pairedCorrelationCoef'])
         },
 		goToResultsPage() {
             this.$router.push({
@@ -370,7 +472,7 @@ export default {
             <p>Введите номер строки данных, для которой Вы провели расчеты:</p> 
             
             <p>n = <input class="value-input n-input" type="number" v-model="strNumber" min="1" :max="this.new_lab_data['data']['weights'].length" :value="strNumber" 
-                @change="checkStrInput"></p>
+                @change="checkStrInput" @input="removeError"></p>
         </div>  
         
         <div class="input-block wide-block">
@@ -382,15 +484,15 @@ export default {
                             <mn>ср</mn>
                         </msub>
                     </math> 
-                    = <input :class="'value-input', [wrongInputData[0] ? 'wrong-data' : ''] " type="number" min="0.01" step="0.01" placeholder="с" v-model="inputData['avgTime']" 
-                        @change="checkInputValue('avgTime')"></p>
+                    = <input class="value-input" type="number" min="0.01" step="0.01" placeholder="с" v-model="inputData['avgTime']" 
+                        @change="checkInputValue('avgTime')" @input="removeError" name="at"></p>
         </div>  
         
         <div class="input-block wide-block">
             <p>Введите значение момента силы</p> 
             
-            <p>M = <input type="number" v-model="inputData['forceMoment']" placeholder="H" @change="checkInputValue('forceMoment')"
-                :class="'value-input', [wrongInputData[1] ? 'wrong-data' : '']"></p>
+            <p>M = <input type="number" v-model="inputData['forceMoment']" placeholder="H" @change="checkInputValue('forceMoment')" @input="removeError"
+                class="value-input" name="fm"></p>
         </div>
 
         <div class="input-block wide-block">
@@ -412,10 +514,10 @@ export default {
                                     </mrow>
                                 </mfrac>
                             </math>" 
-                @change="checkInputValue('angularAcceleration')" :class="'value-input', [wrongInputData[2] ? 'wrong-data' : '']"></p>
+                @change="checkInputValue('angularAcceleration')" @input="removeError" class="value-input" name="aa"></p>
         </div>
 
-        <div class="input-block wide-block" :class="[wrongInputData[3] ? 'wrong-data' : '']">
+        <div class="input-block wide-block">
             <p>Введите значение момента инерции</p> 
             
             <p>I (кг·<math>
@@ -428,9 +530,13 @@ export default {
                     </mn>
                 </msup>
             </math>) 
-                = <input type="number" v-model="inputData['inertiaMoment']" placeholder="H" @change="checkInputValue('inertiaMoment')" 
-                :class="['value-input', wrongInputData[3] ? 'wrong-data' : '']"></p>
+                = <input type="number" v-model="inputData['inertiaMoment']" placeholder="H" @change="checkInputValue('inertiaMoment')"  @input="removeError"
+                class="value-input" name="im"></p>
         </div>
+
+        <p class="error-text hidden">Заполните все поля</p>
+
+        <p class="error-text hidden">Вычисления выполнены неверно</p>
         
         <button class="login-btn start-btn m-b-100" @click="finish">Вычислить</button>
     </div>

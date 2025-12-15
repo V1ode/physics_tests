@@ -43,8 +43,34 @@ export default {
 
 	methods: {
         startWork() {
-            this.saveStudentData()
-            this.goToLab()
+            if(!this.checkEmptyInputs()) {
+                this.saveStudentData()
+                this.goToLab()
+            } 
+        },
+        checkEmptyInputs() {
+            for(let i = 0; i < this.studentCount; i++) {
+                if(this.studentsLastNames[i] == null || this.studentsLastNames[i].trim().length === 0 ||
+                        this.studentsFirstNames[i] == null || this.studentsFirstNames[i].trim().length === 0 ||
+                        this.studentsPatronimics[i] == null || this.studentsPatronimics[i].trim().length === 0) {
+                    document.querySelector(`.error-text`)
+                        .classList.remove('hidden')
+
+                    document.querySelector(`.students-container`)
+                        .classList.add('wrong-data')
+
+                    return true
+                }
+            }
+
+            return false
+        },
+        removeError() {
+            document.querySelector(`.error-text`)
+                .classList.add('hidden')
+            
+            document.querySelector(`.students-container`)
+                .classList.remove('wrong-data')
         },
         saveStudentData() { 
             let newLabData = {}
@@ -82,25 +108,26 @@ export default {
         <div class="input-block">
             <p class="input-text">Число человек в звене: </p> 
             
-            <select class="select-number" v-model="studentCount">
+            <select class="select-number" v-model="studentCount" @change="removeError">
                 <option v-for="index in maxStudentsCount" :value="index">{{index}}</option>                
             </select>
         </div>
 
         <div class="students-container">
             <div v-for="index in studentCount" class="student-input-block">                
-                <input type="text" class="text-input" v-model="studentsLastNames[index-1]" placeholder="Фамилия">
+                <input type="text" class="text-input" @input="removeError" v-model="studentsLastNames[index-1]" placeholder="Фамилия" :name="'f'+index">
                     
-                <input type="text" class="text-input" v-model="studentsFirstNames[index-1]" placeholder="Имя">
+                <input type="text" class="text-input" @input="removeError" v-model="studentsFirstNames[index-1]" placeholder="Имя" :name="'n'+index">
 
-                <input type="text" class="text-input" v-model="studentsPatronimics[index-1]" placeholder="Отчество">
+                <input type="text" class="text-input" @input="removeError" v-model="studentsPatronimics[index-1]" placeholder="Отчество" :name="'p'+index">
                     
-                <select class="select-data" v-model="studentsGroups[index-1]">
+                <select class="select-data" @change="removeError" v-model="studentsGroups[index-1]">
                     <option v-for="group in groups" :value="group">{{group}}</option>                
                 </select>
             </div>
         </div>
         
+        <p class="error-text hidden">Заполните все поля</p>
         
         <button class="login-btn start-btn" @click="startWork">Начать работу</button>
     </div>
@@ -266,4 +293,20 @@ export default {
         margin: 0px;
         margin-top: 50px;
     }
+
+    .hidden {
+        position: absolute;
+        bottom: 0px;
+        opacity: 0;
+    }
+
+    .error-text {
+        color: red;
+
+        margin-top: 15px;
+    }
+
+    .wrong-data {
+        border-color: red;
+    } 
 </style>

@@ -16,7 +16,7 @@ export default {
 	data() {
 		return {
             inputData: {
-                "confidenceCoefficient": 0.00001,
+                "confidenceCoefficient": NaN,
                 "stopwatchErr": NaN,
                 "loadLoweringHeightErr": NaN,
                 "pulleyRadiusErr": NaN,
@@ -35,15 +35,48 @@ export default {
                 this.strNumber = 1
             else if(this.strNumber > this.new_lab_data['data']['weights'].length)
                 this.strNumber = this.new_lab_data['data']['weights'].length
-        },
+        },        
         checkInputValue(valueName) {
             if(this.inputData[valueName] < 0.00001)
                 this.inputData[valueName] = 0.00001
         },
         continueWork() {
-            this.saveInputData()
-            console.log(this.new_lab_data)
-            this.goToFourthPage()
+            if(!this.checkEmptyInputs()) {
+                this.saveInputData()
+                this.goToFourthPage()
+            }            
+        },
+        checkEmptyInputs() {
+            let correctInput = true
+            let count = 0
+            let inputBlocks = document.querySelectorAll(`.input-block`)
+
+            for(let key in this.inputData) {                
+                if(isNaN(this.inputData[key.toString()])) {
+                    inputBlocks[count].classList.add('wrong-data')
+                    correctInput = false
+                }
+                
+                count++
+            }
+
+            if(!correctInput) {
+                document.querySelector(`.error-text`)
+                    .classList.remove('hidden')
+            }
+
+            return !correctInput
+        },
+        removeError() {
+            let errorInputBlocks = document.querySelectorAll(`.wrong-data`)
+            
+            for(let i = 0; i < errorInputBlocks.length; i++) {
+                errorInputBlocks[i].classList.remove('wrong-data')
+                errorInputBlocks[i].classList.remove('b-w-3')
+            }
+
+            document.querySelector(`.error-text`)
+                .classList.add('hidden')
         },
         saveInputData() {
             this.new_lab_data["data"]["confidenceCoefficient"] = this.inputData["confidenceCoefficient"]
@@ -70,8 +103,8 @@ export default {
             <div class="right-section">
                 <p>α =</p>
 
-                <input class="value-input" type="number" v-model="inputData['confidenceCoefficient']" min="0.01" :max="1" :value="inputData['confidenceCoefficient']" 
-                @change="checkInputValue('confidenceCoefficient')">
+                <input class="value-input" type="number" v-model="inputData['confidenceCoefficient']" min="0.01" max="1" 
+                placeholder="0.01" @change="checkInputValue('confidenceCoefficient')" @input="removeError" name="conf">
             </div>                
         </div>  
         
@@ -81,8 +114,8 @@ export default {
             <div class="right-section">
                 <p>Δt = </p>
 
-                <input class="value-input" type="number" v-model="inputData['stopwatchErr']" :min="0.001" :value="inputData['stopwatchErr']" 
-                placeholder="с" @change="checkInputValue('stopwatchErr')">
+                <input class="value-input" type="number" v-model="inputData['stopwatchErr']" min="0.001"
+                placeholder="с" @change="checkInputValue('stopwatchErr')" @input="removeError" name="se">
             </div>
         </div>  
 
@@ -92,8 +125,8 @@ export default {
                 <div class="right-section">
                     <p>Δh = </p>
 
-                    <input class="value-input" type="number" v-model="inputData['loadLoweringHeightErr']" :min="0.001" :value="inputData['loadLoweringHeightErr']" 
-                    placeholder="м" @change="checkInputValue('loadLoweringHeightErr')">
+                    <input class="value-input" type="number" v-model="inputData['loadLoweringHeightErr']" min="0.001"  
+                    placeholder="м" @change="checkInputValue('loadLoweringHeightErr')" @input="removeError" name="llhe">
                 </div>
         </div>  
 
@@ -103,8 +136,8 @@ export default {
                 <div class="right-section">
                     <p>Δr = </p>
 
-                    <input class="value-input" type="number" v-model="inputData['pulleyRadiusErr']" :min="0.00001" :max="1" :value="inputData['pulleyRadiusErr']" 
-                    placeholder="м" @change="checkInputValue('pulleyRadiusErr')">
+                    <input class="value-input" type="number" v-model="inputData['pulleyRadiusErr']" min="0.00001" max="1" 
+                    placeholder="м" @change="checkInputValue('pulleyRadiusErr')" @input="removeError" name="pre">
                 </div>
         </div>  
 
@@ -114,12 +147,14 @@ export default {
             <div class="right-section">
                 <p>Δm = </p>
 
-                <input class="value-input" type="number" v-model="inputData['weightErr']" :min="0.0001" :max="1" :value="inputData['weightErr']" 
-                placeholder="кг" @change="checkInputValue('weightErr')">
+                <input class="value-input" type="number" v-model="inputData['weightErr']" min="0.0001" :max="1" 
+                placeholder="кг" @change="checkInputValue('weightErr')" @input="removeError" name="we">
             </div>
         </div>  
+
+        <p class="error-text hidden">Заполните все поля</p>
         
-        <button class="login-btn start-btn" @click="continueWork">Вычислить</button>
+        <button class="login-btn start-btn" @click="continueWork">Продолжить</button>
     </div>
 </template>
 
@@ -159,12 +194,11 @@ export default {
         padding: 5px;
     }
 
-
-
-
     .wrong-data {
         border-color: red;
     }
+
+
 
     .title {
         font-size: 41px;

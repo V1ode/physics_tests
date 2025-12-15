@@ -42,10 +42,48 @@ export default {
             if(this.timeMeasurings[weigthIndex][timeMeasuringIndex] < 0.01) {
                 this.timeMeasurings[weigthIndex][timeMeasuringIndex] = 0.01
             }
-        },
+        },        
         continueWork() {
-            this.saveInputData()
-            this.goToThirdPage()
+            if(!this.checkEmptyInputs()) {
+                this.saveInputData()
+                this.goToThirdPage()
+            }            
+        },
+        checkEmptyInputs() {
+            let correctInput = true
+
+            for(let i = 0; i < this.weightsCount; i++) {
+                if(this.weights[i] == null) {
+                    document.querySelectorAll(`.weight-input`)[i].classList.add('wrong-table-data')
+
+                    correctInput = false
+                }
+
+                for(let j = 0; j < this.timeMeasuringCount; j++) {
+                    if(this.timeMeasurings[i][j] == null) {
+                        document.querySelectorAll(`.time-input`)[i*this.timeMeasuringCount+j].classList.add('wrong-table-data')
+
+                        correctInput = false
+                    }
+                }
+            }
+
+            if(!correctInput) {
+                document.querySelector(`.error-text`)
+                    .classList.remove('hidden')
+            }
+
+            return !correctInput
+        },
+        removeError() {
+            let errorInputBlocks = document.querySelectorAll(`.wrong-table-data`)
+            
+            for(let i = 0; i < errorInputBlocks.length; i++) {
+                errorInputBlocks[i].classList.remove('wrong-table-data')
+            }
+
+            document.querySelector(`.error-text`)
+                .classList.add('hidden')
         },
         saveInputData() { 
             console.log(this.new_lab_data) 
@@ -73,7 +111,7 @@ export default {
             <div class="input-block m-t-0">
                 <p>Число различных масс, использованных в работе: </p> 
                 
-                <select class="select-number" v-model="weightsCount">
+                <select @change="removeError" class="select-number" v-model="weightsCount">
                     <option v-for="index in (maxWeightsCount-minWeightsCount+1)" :value="maxWeightsCount-index+1">{{maxWeightsCount-index+1}}</option>                
                 </select>
             </div>    
@@ -81,7 +119,7 @@ export default {
             <div class="input-block m-t-0">
                 <p>Число измерений времени при постоянной массе: </p> 
                 
-                <select class="select-number" v-model="timeMeasuringCount">
+                <select @change="removeError" class="select-number" v-model="timeMeasuringCount">
                     <option v-for="index in (maxTimeCount-minTimeCount+1)" :value="index+minTimeCount-1">{{index+minTimeCount-1}}</option>                
                 </select>
             </div>
@@ -89,29 +127,31 @@ export default {
 
         <table class="table" border="1">
             <tr v-for="weigthIndex in weightsCount">
-                <td>
+                <td class="weight-input">
                     <math>
                         <msub>
                             <mi>m</mi>
                             <mn>{{weigthIndex}}</mn>
                         </msub>
                     </math> 
-                    = <input class="weight-input" type="number" min="0.03" max="0.7" step="0.01" v-model="weights[weigthIndex-1]"
-                        placeholder="От 0.03 до 0.7 кг" @change="checkWeightInput(weigthIndex-1)">
+                    = <input  @input="removeError" type="number" min="0.03" max="0.7" step="0.01" v-model="weights[weigthIndex-1]"
+                        placeholder="От 0.03 до 0.7 кг" @change="checkWeightInput(weigthIndex-1)" :name="'w' + weigthIndex">
                 </td>
 
-                <td v-for="timeMeasuringIndex in timeMeasuringCount">
+                <td class="time-input" v-for="timeMeasuringIndex in timeMeasuringCount">
                     <math>
                         <msub>
                             <mi>t</mi>
                             <mn>{{weigthIndex}}{{timeMeasuringIndex}}</mn>
                         </msub>
                     </math> 
-                    = <input class="time-input" type="number" min="0.01" step="0.01" placeholder="с" v-model="timeMeasurings[weigthIndex-1][timeMeasuringIndex-1]" 
-                        @change="checkTimeMeasuringInput(weigthIndex-1, timeMeasuringIndex-1)">
+                    = <input @input="removeError" type="number" min="0.01" step="0.01" placeholder="с" v-model="timeMeasurings[weigthIndex-1][timeMeasuringIndex-1]" 
+                        @change="checkTimeMeasuringInput(weigthIndex-1, timeMeasuringIndex-1)" :name="'tm' + weigthIndex + timeMeasuringIndex">
                 </td>
             </tr>
         </table>
+
+        <p class="error-text hidden">Заполните все поля</p>
         
         <button class="login-btn start-btn" @click="continueWork">Продолжить</button>
     </div>
@@ -152,10 +192,10 @@ export default {
     .table tr {       
         display: flex;
         gap: 10px;
-    }
+    } 
 
-    .table td {
-        border: 1px solid;
+    .weight-input, .time-input {
+        border: 1px solid black;
         border-radius: 1px;
 
         padding: 15px;
@@ -172,19 +212,23 @@ export default {
             -webkit-appearance: none;
     }
 
-    .weight-input, .time-input {
+    .weight-input input, .time-input input {
         padding: 5px;
 
         text-align: end;
     }
 
-    .weight-input {
+    .weight-input input {
         width: 121px;
     }
 
-    .time-input {
+    .time-input input {
         width: 121px;
         
+    }    
+
+    .wrong-table-data {
+        border: 1px solid red;
     }
 
 
@@ -239,9 +283,5 @@ export default {
         gap: 10px;
 
         margin-top: 10px;
-    }
-
-    .warning-text {
-        color: red;
     }
 </style>
